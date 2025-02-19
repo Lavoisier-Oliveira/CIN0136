@@ -1,10 +1,39 @@
 import json, sys
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from main import MainWindow, QApplication
+import os
+import games
+import gemini
 app = Flask(__name__)
 CORS(app)
 
+user_data_path = 'user_data.json'
+try:
+    with open(user_data_path, 'r') as file:
+        user_data = json.load(file)
+except Exception:
+    user_data = {'game_library': {}, 'game_recommendations': {'High Priority': {}, 'Low Priority': {}}}
+
+bot = gemini.GeminiModel()
+
+# ROTA QUE RETORNA RESPOSTA DA IA E ADICIONA OS JOGOS QUE ELA RECOMENDOU AO USER_DATA.JSON
+@app.get("/genai/<prompt>")
+def test(prompt: str):
+    reply = eval(bot.send_message(prompt))
+   
+    for command in reply:
+        titles = command.get('titles', [])
+    
+    for title in titles:
+        game_result = games.search_game(title)
+        user_data['game_recommendations']['High Priority'][title] = game_result
+        
+    with open(user_data_path, 'w') as file:
+        json.dump(user_data, file)
+        
+    return reply
+            
+"""
 @app.route('/submit-message', methods=['POST'])
 
 def submit_message():
@@ -33,6 +62,8 @@ def send_library():
     return jsonify(user_data)
 
 
+"""
+    
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
     
