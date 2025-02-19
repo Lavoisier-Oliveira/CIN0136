@@ -22,12 +22,31 @@ def test(prompt: str):
     reply = eval(bot.send_message(prompt))
    
     for command in reply:
+        task = reply.get('command', "")
         titles = command.get('titles', [])
     
-    for title in titles:
-        game_result = games.search_game(title)
-        user_data['game_recommendations']['High Priority'][title] = game_result
-        
+        for idx, title in enumerate(titles):
+            game_result = games.search_game(title)
+            
+            if task == 'Recommend':
+                if idx == 0:
+                    user_data['game_recommendations']['High Priority'][title] = game_result
+                else:
+                    user_data['game_recommendations']['Low Priority'][title] = game_result
+            
+            elif task == 'Add':
+                user_data['game_library'][title] = {'rating':'unrated', 'state':'unplayed', 'data':game_result}
+                
+            elif task == 'Rate':
+                user_data['game_library'].get(title, {'rating':''})['rating'] = reply.get('ratings', ['10'] * idx)[idx]
+                
+            elif task == 'State':
+                user_data['game_library'].get(title, {'state':''})['state'] = reply.get('ratings', ['unplayed'] * idx)[idx]
+            
+            elif task == 'Remove':
+                user_data['game_library'].get(title, {'rating':''})['rating'] = reply.get('ratings', ['10'] * idx)[idx]
+                
+                        
     with open(user_data_path, 'w') as file:
         json.dump(user_data, file)
         
